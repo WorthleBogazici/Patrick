@@ -1,0 +1,6 @@
+# Request a link pose from simulation
+string link_name
+string reference_frame
+---
+bool success
+geometry_msgs/Pose pose

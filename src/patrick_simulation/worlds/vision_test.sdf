@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="colored_cylinders">
+    <static>true</static>
+
+    <!-- Red cylinder -->
+    <link name="red_cylinder">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <cylinder><radius>0.07</radius><length>0.2</length></cylinder>
+        </geometry>
+        <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+      </visual>
+    </link>
+
+    <!-- Green cylinder (horizontal) -->
+    <link name="green_cylinder">
+      <pose>0.5 0.4 -0.2 0 1.5708 1.5708</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <cylinder><radius>0.07</radius><length>0.2</length></cylinder>
+        </geometry>
+        <material>
+            <ambient>0 1 0 1</ambient>
+            <diffuse>0 1 0 1</diffuse>
+          </material>
+      </visual>
+    </link>
+
+    <!-- Blue box -->
+    <link name="blue_box">
+      <pose>1.0 -0.4 0.2 0 1.5708 1.5708</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box><size>0.14 0.14 0.3</size></box>
+        </geometry>
+        <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+          </material>
+      </visual>
+    </link>
+
+  </model>
+</sdf>

@@ -1,0 +1,213 @@
+# =============================================================================
+# Patrick Robot — Unified Parameters (ROS 2 Jazzy)
+# =============================================================================
+# All node parameters in a single file. Each top-level key corresponds to a
+# node name or namespace, following ROS 2 parameter YAML conventions.
+# =============================================================================
+
+# ─── Robot Configuration ─────────────────────────────────────────────────────
+patrick:
+  ros__parameters:
+    robot_name: "patrick"
+
+    # Arm kinematics (DH parameters)
+    arm:
+      d1: 0.08327
+      d2: 0.08918
+      d3: 0.03320
+      a2: 0.18000
+      a3: 0.22010
+
+    # Home joint angles (radians)
+    home:
+      theta1: 0.7853981633974483   # pi/4
+      theta2: 0.0
+      theta3: 1.5707963267948966   # pi/2
+
+    # Homing velocities (rad/s)
+    homing_velocity:
+      joint1: 0.6
+      joint2: 0.6
+      joint3: 0.6
+
+    # Gripper angles (radians)
+    gripper:
+      open_angle: 0.194429679
+      close_angle: -0.194429679
+
+    # Wrist angles
+    wrist:
+      horizontal: 0.0
+      vertical: 1.57
+
+    # General motion
+    cmd_rate_hz: 50.0
+    hold_sec_default: 2.0
+
+    # End-effector tolerance
+    ee_tol_m: 0.01
+
+    # IK motion time
+    ik_move_sec: 2.0
+
+    # Pure-pursuit path following parameters
+    pp_lookahead_u: 0.06
+    pp_err_slow_rad: 0.15
+    pp_alpha_min: 0.02
+    pp_q_finish_tol: 0.03
+    pp_max_total_sec: 10.0
+
+# ─── Navigation (Kobuki base motion) ────────────────────────────────────────
+navigation_node:
+  ros__parameters:
+    # Topics
+    cmd_vel_topic: "/diff_drive_controller/cmd_vel_unstamped"
+
+    # Linear PID
+    linear_kp: 1.8
+    linear_ki: 0.08
+    linear_kd: 0.12
+
+    # Angular PID
+    angular_kp: 3.0
+    angular_ki: 0.05
+    angular_kd: 0.20
+
+    # Velocity limits
+    max_linear_velocity: 0.25
+    min_linear_velocity: 0.02
+    max_angular_velocity: 1.2
+
+    # Completion tolerances
+    distance_tolerance: 0.02
+    yaw_tolerance: 0.02
+    stop_hold_time: 0.20
+    yaw_stop_hold_time: 0.20
+
+    # Anti-windup
+    linear_integral_max: 0.40
+    angular_integral_max: 0.50
+
+    # Safety
+    max_total_time: 20.0
+    control_rate: 50.0
+
+# ─── Manipulation Node ──────────────────────────────────────────────────────
+manipulation_node:
+  ros__parameters:
+    # Joint command topics (via ros2_control)
+    use_trajectory_controller: true
+    arm_controller_action: "/arm_controller/follow_joint_trajectory"
+    gripper_controller_topic: "/gripper_controller/commands"
+
+    # Wait time for subscribers
+    wait_subscribers_s: 5.0
+
+    # Attach simulation parameters
+    attach_hz: 100.0
+
+    # Shake parameters
+    shake_frequency_hz: 10.0
+    shake_j1_position: 0.78
+    shake_j2_position: 0.0
+    shake_j3_a_position: 0.5
+    shake_j3_b_position: -0.5
+
+    # Knock parameters
+    knock_offset: 0.08
+    knock_period: 0.2
+
+    # Push / pull distances
+    push_distance: 0.07
+    pull_distance: 0.07
+
+    # Take timings (seconds)
+    take_after_open_sec: 2.0
+    take_after_wrist_sec: 2.0
+    take_after_ik_sec: 1.0
+    take_after_attach_init_sec: 0.0
+    take_after_close_sec: 0.0
+
+# ─── Kobuki Base Driver (third-party kobuki_node, real hardware) ─────────────
+kobuki_ros_node:
+  ros__parameters:
+    device_port: "/dev/kobuki"
+    battery:
+      capacity: 16.5
+      low: 14.0
+      dangerous: 13.2
+
+# ─── Vision Pipeline ────────────────────────────────────────────────────────
+fastsam_color_detector:
+  ros__parameters:
+    model_path: ""  # Empty = use default bundled model
+    image_topic: "/patrick/camera/rgb/image_raw"
+
+    # FastSAM inference parameters
+    fastsam_imgsz: 1024
+    fastsam_conf: 0.6
+    fastsam_iou: 0.9
+
+    # Detection parameters
+    min_mask_area: 100
+
+    # Color definitions (HSV ranges) — use mappings so ROS 2 param parser
+    # flattens them to colors.0.name, colors.0.hsv_ranges.0.lower, etc.
+    colors:
+      "0":
+        name: "red_cylinder"
+        threshold: 0.3
+        hsv_ranges:
+          "0":
+            lower: [0, 80, 80]
+            upper: [15, 255, 255]
+          "1":
+            lower: [160, 80, 80]
+            upper: [180, 255, 255]
+      "1":
+        name: "green_cylinder"
+        threshold: 0.3
+        hsv_ranges:
+          "0":
+            lower: [35, 80, 80]
+            upper: [85, 255, 255]
+      "2":
+        name: "blue_box"
+        threshold: 0.3
+        hsv_ranges:
+          "0":
+            lower: [100, 80, 80]
+            upper: [130, 255, 255]
+
+object_frame_publisher:
+  ros__parameters:
+    depth_topic: "/patrick/camera/depth/image_raw"
+    camera_info_topic: "/patrick/camera/camera_info"
+    optical_frame: "zed2_left_camera_frame_optical"
+    camera_link_frame: "zed2_camera_link"
+
+    # PCL filtering
+    pcl_mean_k: 50
+    pcl_stddev_mul_thresh: 0.2
+
+    # Color names (must match fastsam_color_detector)
+    object_names:
+      - "red_cylinder"
+      - "green_cylinder"
+      - "blue_box"
+
+object_marker_publisher:
+  ros__parameters:
+    marker_frame: "world"
+
+# ─── Simulation ─────────────────────────────────────────────────────────────
+simulation:
+  ros__parameters:
+    world_file: "hello.world"
+    env_sdf: "environment.sdf"
+    spawn_x: 0.0
+    spawn_y: 0.0
+    spawn_z: 0.0
+    env_x: 1.0
+    env_y: 0.0
+    env_z: 0.5

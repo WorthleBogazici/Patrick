@@ -1,0 +1,11 @@
+<library path="patrick_manipulation">
+  <class name="patrick_manipulation/ArduinoHardwareInterface"
+         type="patrick_manipulation::ArduinoHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control hardware interface for Patrick's arm.
+      Communicates with an Arduino board over serial to drive:
+        Joint1 (stepper), Joint2-3 (RX-64), Joint4/5R/5L (AX-18A).
+    </description>
+  </class>
+</library>

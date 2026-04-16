@@ -1,0 +1,7 @@
+# Set a link pose in simulation
+string link_name
+string reference_frame
+geometry_msgs/Pose pose
+geometry_msgs/Twist twist
+---
+bool success

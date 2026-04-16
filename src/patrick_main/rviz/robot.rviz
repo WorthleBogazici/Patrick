@@ -1,0 +1,613 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 70
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /TF1
+        - /TF1/Frames1
+      Splitter Ratio: 0.5676470398902893
+    Tree Height: 434
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 10
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        Link1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link6L:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link6R:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        arm_mount_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        caster_back_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        caster_front_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        cliff_sensor_front_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gyro_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        plate_bottom_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        plate_middle_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        plate_top_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_2_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_3_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_4_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_5_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_kinect_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_kinect_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_2_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_3_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_2_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_3_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        target_cube_ee:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        zed2_baro_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_camera_center:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        zed2_camera_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_left_camera_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_left_camera_frame_optical:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_mag_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_right_camera_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_right_camera_frame_optical:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_temp_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        zed2_temp_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        Link1:
+          Value: true
+        Link2:
+          Value: false
+        Link3:
+          Value: false
+        Link4:
+          Value: false
+        Link5:
+          Value: false
+        Link6L:
+          Value: false
+        Link6R:
+          Value: false
+        arm_mount_link:
+          Value: false
+        base_footprint:
+          Value: false
+        base_link:
+          Value: true
+        caster_back_link:
+          Value: false
+        caster_front_link:
+          Value: false
+        cliff_sensor_front_link:
+          Value: false
+        cliff_sensor_left_link:
+          Value: false
+        cliff_sensor_right_link:
+          Value: false
+        gyro_link:
+          Value: false
+        odom:
+          Value: false
+        plate_bottom_link:
+          Value: false
+        plate_middle_link:
+          Value: false
+        plate_top_link:
+          Value: false
+        pole_bottom_0_link:
+          Value: false
+        pole_bottom_1_link:
+          Value: false
+        pole_bottom_2_link:
+          Value: false
+        pole_bottom_3_link:
+          Value: false
+        pole_bottom_4_link:
+          Value: false
+        pole_bottom_5_link:
+          Value: false
+        pole_kinect_0_link:
+          Value: false
+        pole_kinect_1_link:
+          Value: false
+        pole_middle_0_link:
+          Value: false
+        pole_middle_1_link:
+          Value: false
+        pole_middle_2_link:
+          Value: false
+        pole_middle_3_link:
+          Value: false
+        pole_top_0_link:
+          Value: false
+        pole_top_1_link:
+          Value: false
+        pole_top_2_link:
+          Value: false
+        pole_top_3_link:
+          Value: false
+        target_cube_ee:
+          Value: true
+        wheel_left_link:
+          Value: true
+        wheel_right_link:
+          Value: true
+        world:
+          Value: false
+        zed2_baro_link:
+          Value: false
+        zed2_camera_center:
+          Value: false
+        zed2_camera_link:
+          Value: true
+        zed2_left_camera_frame:
+          Value: false
+        zed2_left_camera_frame_optical:
+          Value: false
+        zed2_mag_link:
+          Value: false
+        zed2_right_camera_frame:
+          Value: false
+        zed2_right_camera_frame_optical:
+          Value: false
+        zed2_temp_left_link:
+          Value: false
+        zed2_temp_right_link:
+          Value: false
+      Marker Scale: 0.5
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        base_footprint:
+          base_link:
+            caster_back_link:
+              {}
+            caster_front_link:
+              {}
+            cliff_sensor_front_link:
+              {}
+            cliff_sensor_left_link:
+              {}
+            cliff_sensor_right_link:
+              {}
+            gyro_link:
+              {}
+            plate_bottom_link:
+              {}
+            plate_middle_link:
+              {}
+            plate_top_link:
+              arm_mount_link:
+                Link1:
+                  Link2:
+                    Link3:
+                      Link4:
+                        Link5:
+                          Link6L:
+                            {}
+                          Link6R:
+                            target_cube_ee:
+                              {}
+              zed2_camera_link:
+                zed2_camera_center:
+                  zed2_baro_link:
+                    {}
+                  zed2_left_camera_frame:
+                    zed2_left_camera_frame_optical:
+                      {}
+                    zed2_temp_left_link:
+                      {}
+                  zed2_mag_link:
+                    {}
+                  zed2_right_camera_frame:
+                    zed2_right_camera_frame_optical:
+                      {}
+                    zed2_temp_right_link:
+                      {}
+            pole_bottom_0_link:
+              {}
+            pole_bottom_1_link:
+              {}
+            pole_bottom_2_link:
+              {}
+            pole_bottom_3_link:
+              {}
+            pole_bottom_4_link:
+              {}
+            pole_bottom_5_link:
+              {}
+            pole_kinect_0_link:
+              {}
+            pole_kinect_1_link:
+              {}
+            pole_middle_0_link:
+              {}
+            pole_middle_1_link:
+              {}
+            pole_middle_2_link:
+              {}
+            pole_middle_3_link:
+              {}
+            pole_top_0_link:
+              {}
+            pole_top_1_link:
+              {}
+            pole_top_2_link:
+              {}
+            pole_top_3_link:
+              {}
+            wheel_left_link:
+              {}
+            wheel_right_link:
+              {}
+        world:
+          odom:
+            {}
+      Update Interval: 0
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: ObjectMarker
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: ""
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: KinectRGB
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: ""
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: false
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: KinectDepth
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: ""
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: RGB8
+      Decay Time: 0
+      Enabled: false
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: KinectPointCloud
+      Position Transformer: ""
+      Selectable: true
+      Size (Pixels): 2
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /kobuki_with_arm/kinect/kinect/depth/points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: base_footprint
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.6153802871704102
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0.1873517483472824
+        Y: -0.17128638923168182
+        Z: 0.6022078394889832
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.2346455305814743
+      Target Frame: base_footprint
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 3.5294408798217773
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1011
+  Hide Left Dock: false
+  Hide Right Dock: false
+  KinectDepth:
+    collapsed: false
+  KinectRGB:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd00000002000000000000015600000395fc0200000003fb00000016004b0069006e00650063007400440065007000740068000000010e000000cd0000001700fffffffb000000100044006900730070006c006100790073010000003f00000238000000cc00fffffffb00000012004b0069006e006500630074005200470042010000027d000001570000001700ffffff000000010000015800000395fc0200000001fb0000000a00560069006500770073010000003f00000395000000a900ffffff000004840000039500000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Views:
+    collapsed: false
+  Width: 1854
+  X: 66
+  Y: 32

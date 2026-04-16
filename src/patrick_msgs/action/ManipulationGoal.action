@@ -1,0 +1,13 @@
+# Goal: manipulation action (take, put, move, shake, knock, push, pull)
+string action_type
+string object_name
+geometry_msgs/Point target_position
+bool wrist_vertical
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string current_phase
+float64 progress

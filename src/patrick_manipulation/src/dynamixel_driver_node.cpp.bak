@@ -1,0 +1,521 @@
+// =============================================================================
+// dynamixel_driver_node.cpp — Lifecycle node for Dynamixel motor communication
+//
+// Modeled after the ROS1 dynamixel_ros package. Uses the Dynamixel SDK
+// (Protocol 2.0) to talk to motors over serial (USB2Dynamixel / U2D2 / Arduino).
+//
+// Lifecycle transitions:
+//   unconfigured → on_configure  : declare params, create port/packet handlers
+//   inactive     → on_activate   : open serial port, ping motors, set operating
+//                                  modes, enable torque, start read/write loop
+//   active       → on_deactivate : disable torque, stop loop
+//   inactive     → on_cleanup    : close port, release handlers
+// =============================================================================
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
+#include <lifecycle_msgs/msg/state.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
+
+#include <dynamixel_sdk/dynamixel_sdk.h>
+
+#include <map>
+#include <string>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <memory>
+
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+// ─── Dynamixel Protocol 2.0 control table (X-series) ────────────────────────
+namespace dxl_addr
+{
+  constexpr uint16_t MODEL_NUMBER        = 0;
+  constexpr uint16_t OPERATING_MODE      = 11;
+  constexpr uint16_t TORQUE_ENABLE       = 64;
+  constexpr uint16_t LED                 = 65;
+  constexpr uint16_t GOAL_PWM            = 100;
+  constexpr uint16_t GOAL_CURRENT        = 102;
+  constexpr uint16_t GOAL_VELOCITY       = 104;
+  constexpr uint16_t PROFILE_ACCELERATION = 108;
+  constexpr uint16_t PROFILE_VELOCITY    = 112;
+  constexpr uint16_t GOAL_POSITION       = 116;
+  constexpr uint16_t PRESENT_CURRENT     = 126;
+  constexpr uint16_t PRESENT_VELOCITY    = 128;
+  constexpr uint16_t PRESENT_POSITION    = 132;
+  constexpr uint16_t PRESENT_TEMPERATURE = 146;
+  constexpr uint16_t HARDWARE_ERROR      = 70;
+}
+
+namespace dxl_mode
+{
+  constexpr uint8_t CURRENT_CONTROL              = 0;
+  constexpr uint8_t VELOCITY_CONTROL             = 1;
+  constexpr uint8_t POSITION_CONTROL             = 3;
+  constexpr uint8_t EXTENDED_POSITION_CONTROL     = 4;
+  constexpr uint8_t CURRENT_BASED_POSITION       = 5;
+  constexpr uint8_t PWM_CONTROL                  = 16;
+}
+
+// ─── Per-joint config ───────────────────────────────────────────────────────
+struct JointConfig
+{
+  std::string joint_name;          // URDF joint name (e.g. "Joint1")
+  int         dxl_id       = 1;    // Dynamixel bus ID
+  uint8_t     operating_mode = dxl_mode::POSITION_CONTROL;
+  double      position_offset = 0.0;   // radians offset (URDF zero vs DXL zero)
+  bool        reverse      = false;
+  double      effort_to_current = 1.0; // conversion factor
+};
+
+// ─── Conversions (X-series, 4096 ticks/rev) ─────────────────────────────────
+namespace dxl_conv
+{
+  // Position: raw ticks ↔ radians.  4096 ticks = 2π rad.  Zero at 2048.
+  constexpr double TICK_TO_RAD = 2.0 * M_PI / 4096.0;
+  constexpr int    CENTER_TICK = 2048;
+
+  inline double ticks_to_rad(int32_t ticks, double offset, bool reverse)
+  {
+    double rad = static_cast<double>(ticks - CENTER_TICK) * TICK_TO_RAD;
+    if (reverse) rad = -rad;
+    return rad - offset;
+  }
+
+  inline int32_t rad_to_ticks(double rad, double offset, bool reverse)
+  {
+    double adj = rad + offset;
+    if (reverse) adj = -adj;
+    return static_cast<int32_t>(std::round(adj / TICK_TO_RAD)) + CENTER_TICK;
+  }
+
+  // Velocity: raw → rad/s.  0.229 rpm per tick.
+  constexpr double VEL_TICK_TO_RADPS = 0.229 * 2.0 * M_PI / 60.0;
+
+  inline double vel_ticks_to_radps(int32_t ticks)
+  {
+    return static_cast<double>(ticks) * VEL_TICK_TO_RADPS;
+  }
+
+  // Current: raw → mA.  2.69 mA per tick (X-series).
+  constexpr double CURRENT_TICK_TO_MA = 2.69;
+
+  inline double current_ticks_to_ma(int16_t ticks)
+  {
+    return static_cast<double>(ticks) * CURRENT_TICK_TO_MA;
+  }
+}
+
+// =============================================================================
+class DynamixelDriverNode : public rclcpp_lifecycle::LifecycleNode
+{
+public:
+  explicit DynamixelDriverNode(const rclcpp::NodeOptions & opts = rclcpp::NodeOptions())
+  : rclcpp_lifecycle::LifecycleNode("dynamixel_driver_node", opts)
+  {
+    // Serial port parameters
+    declare_parameter("port_name", "/dev/ttyUSB0");
+    declare_parameter("baud_rate", 1000000);
+    declare_parameter("protocol_version", 2.0);
+    declare_parameter("loop_rate_hz", 50.0);
+
+    // Joint names and IDs (parallel arrays configured via YAML)
+    declare_parameter("joint_names",
+      std::vector<std::string>{"Joint1", "Joint2", "Joint3", "Joint4", "Joint5R", "Joint5L"});
+    declare_parameter("joint_ids",
+      std::vector<int64_t>{1, 2, 3, 4, 5, 6});
+    declare_parameter("joint_operating_modes",
+      std::vector<int64_t>{3, 3, 3, 3, 3, 3});
+    declare_parameter("joint_offsets",
+      std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+    declare_parameter("joint_reverse",
+      std::vector<bool>{false, false, false, false, false, false});
+
+    // Profile velocity/acceleration defaults (ticks)
+    declare_parameter("profile_velocity", 100);
+    declare_parameter("profile_acceleration", 50);
+  }
+
+  // ── on_configure: parse params, create SDK handlers ────────────────────
+  CallbackReturn on_configure(const rclcpp_lifecycle::State &) override
+  {
+    RCLCPP_INFO(get_logger(), "Configuring DynamixelDriverNode");
+
+    port_name_ = get_parameter("port_name").as_string();
+    baud_rate_ = static_cast<int>(get_parameter("baud_rate").as_int());
+    protocol_  = get_parameter("protocol_version").as_double();
+    loop_rate_ = get_parameter("loop_rate_hz").as_double();
+
+    auto names   = get_parameter("joint_names").as_string_array();
+    auto ids     = get_parameter("joint_ids").as_integer_array();
+    auto modes   = get_parameter("joint_operating_modes").as_integer_array();
+    auto offsets = get_parameter("joint_offsets").as_double_array();
+    auto reverse = get_parameter("joint_reverse").as_bool_array();
+
+    if (names.size() != ids.size()) {
+      RCLCPP_ERROR(get_logger(), "joint_names and joint_ids must have the same length");
+      return CallbackReturn::FAILURE;
+    }
+
+    joints_.clear();
+    for (size_t i = 0; i < names.size(); ++i) {
+      JointConfig jc;
+      jc.joint_name = names[i];
+      jc.dxl_id     = static_cast<int>(ids[i]);
+      jc.operating_mode = (i < modes.size())   ? static_cast<uint8_t>(modes[i]) : dxl_mode::POSITION_CONTROL;
+      jc.position_offset = (i < offsets.size()) ? offsets[i] : 0.0;
+      jc.reverse    = (i < reverse.size())      ? reverse[i] : false;
+      joints_.push_back(jc);
+    }
+
+    // Create Dynamixel SDK handlers
+    port_handler_   = dynamixel::PortHandler::getPortHandler(port_name_.c_str());
+    packet_handler_ = dynamixel::PacketHandler::getPacketHandler(static_cast<float>(protocol_));
+
+    // Create publishers/subscribers (but don't activate yet)
+    joint_state_pub_ = create_publisher<sensor_msgs::msg::JointState>(
+      "dynamixel/joint_states", 10);
+
+    // Subscriptions for command input
+    // Position commands: Float64MultiArray with one value per joint (radians)
+    position_cmd_sub_ = create_subscription<std_msgs::msg::Float64MultiArray>(
+      "dynamixel/position_commands", 10,
+      [this](std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+        if (this->get_current_state().id() !=
+            lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) return;
+        std::lock_guard<std::mutex> lk(cmd_mtx_);
+        position_cmds_ = msg->data;
+      });
+
+    // Effort/current commands
+    effort_cmd_sub_ = create_subscription<std_msgs::msg::Float64MultiArray>(
+      "dynamixel/effort_commands", 10,
+      [this](std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+        if (this->get_current_state().id() !=
+            lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) return;
+        std::lock_guard<std::mutex> lk(cmd_mtx_);
+        effort_cmds_ = msg->data;
+      });
+
+    RCLCPP_INFO(get_logger(), "Configured %zu joints on port %s @ %d baud",
+      joints_.size(), port_name_.c_str(), baud_rate_);
+    return CallbackReturn::SUCCESS;
+  }
+
+  // ── on_activate: open port, ping motors, enable torque, start loop ─────
+  CallbackReturn on_activate(const rclcpp_lifecycle::State &) override
+  {
+    RCLCPP_INFO(get_logger(), "Activating DynamixelDriverNode — opening serial port");
+
+    // Open port
+    if (!port_handler_->openPort()) {
+      RCLCPP_ERROR(get_logger(), "Failed to open port: %s", port_name_.c_str());
+      return CallbackReturn::FAILURE;
+    }
+    if (!port_handler_->setBaudRate(baud_rate_)) {
+      RCLCPP_ERROR(get_logger(), "Failed to set baud rate: %d", baud_rate_);
+      port_handler_->closePort();
+      return CallbackReturn::FAILURE;
+    }
+
+    RCLCPP_INFO(get_logger(), "Serial port opened successfully");
+
+    // Ping each motor, read model, set operating mode, enable torque
+    uint8_t dxl_error = 0;
+    for (auto & jc : joints_) {
+      // Ping
+      uint16_t model_number = 0;
+      int result = packet_handler_->ping(
+        port_handler_, static_cast<uint8_t>(jc.dxl_id), &model_number, &dxl_error);
+      if (result != COMM_SUCCESS) {
+        RCLCPP_ERROR(get_logger(), "Failed to ping Dynamixel ID %d: %s",
+          jc.dxl_id, packet_handler_->getTxRxResult(result));
+        disable_all_torque();
+        port_handler_->closePort();
+        return CallbackReturn::FAILURE;
+      }
+      RCLCPP_INFO(get_logger(), "Found Dynamixel ID %d (%s) — model %u",
+        jc.dxl_id, jc.joint_name.c_str(), model_number);
+
+      // Disable torque before changing operating mode (EEPROM write)
+      write1(jc.dxl_id, dxl_addr::TORQUE_ENABLE, 0);
+
+      // Set operating mode
+      write1(jc.dxl_id, dxl_addr::OPERATING_MODE, jc.operating_mode);
+
+      // Set profile velocity and acceleration for position mode
+      if (jc.operating_mode == dxl_mode::POSITION_CONTROL ||
+          jc.operating_mode == dxl_mode::EXTENDED_POSITION_CONTROL ||
+          jc.operating_mode == dxl_mode::CURRENT_BASED_POSITION)
+      {
+        write4(jc.dxl_id, dxl_addr::PROFILE_VELOCITY,
+          static_cast<uint32_t>(get_parameter("profile_velocity").as_int()));
+        write4(jc.dxl_id, dxl_addr::PROFILE_ACCELERATION,
+          static_cast<uint32_t>(get_parameter("profile_acceleration").as_int()));
+      }
+
+      // Enable torque
+      write1(jc.dxl_id, dxl_addr::TORQUE_ENABLE, 1);
+
+      // Turn LED on (visual indicator)
+      write1(jc.dxl_id, dxl_addr::LED, 1);
+    }
+
+    // Activate publisher
+    joint_state_pub_->on_activate();
+
+    // Start the read/write timer
+    auto period = std::chrono::duration<double>(1.0 / loop_rate_);
+    timer_ = create_wall_timer(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(period),
+      [this]() { this->control_loop(); });
+
+    RCLCPP_INFO(get_logger(), "DynamixelDriverNode ACTIVE — all motors torqued on");
+    return CallbackReturn::SUCCESS;
+  }
+
+  // ── on_deactivate: disable torque, stop loop ───────────────────────────
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) override
+  {
+    RCLCPP_INFO(get_logger(), "Deactivating DynamixelDriverNode");
+
+    if (timer_) {
+      timer_->cancel();
+      timer_.reset();
+    }
+
+    disable_all_torque();
+    joint_state_pub_->on_deactivate();
+
+    RCLCPP_INFO(get_logger(), "All torques disabled");
+    return CallbackReturn::SUCCESS;
+  }
+
+  // ── on_cleanup: close port ─────────────────────────────────────────────
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State &) override
+  {
+    RCLCPP_INFO(get_logger(), "Cleaning up DynamixelDriverNode");
+
+    if (port_handler_) {
+      port_handler_->closePort();
+    }
+    joint_state_pub_.reset();
+    position_cmd_sub_.reset();
+    effort_cmd_sub_.reset();
+    joints_.clear();
+
+    return CallbackReturn::SUCCESS;
+  }
+
+  // ── on_shutdown ────────────────────────────────────────────────────────
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override
+  {
+    RCLCPP_INFO(get_logger(), "Shutting down DynamixelDriverNode");
+    disable_all_torque();
+    if (port_handler_) port_handler_->closePort();
+    return CallbackReturn::SUCCESS;
+  }
+
+  // ── on_error ───────────────────────────────────────────────────────────
+  CallbackReturn on_error(const rclcpp_lifecycle::State &) override
+  {
+    RCLCPP_ERROR(get_logger(), "DynamixelDriverNode entered error state");
+    disable_all_torque();
+    if (port_handler_) port_handler_->closePort();
+    return CallbackReturn::SUCCESS;
+  }
+
+private:
+  // ── Main control loop (timer callback) ─────────────────────────────────
+  void control_loop()
+  {
+    // --- Write commands ---
+    {
+      std::lock_guard<std::mutex> lk(cmd_mtx_);
+
+      // Position commands
+      if (!position_cmds_.empty()) {
+        size_t n = std::min(position_cmds_.size(), joints_.size());
+        for (size_t i = 0; i < n; ++i) {
+          if (joints_[i].operating_mode == dxl_mode::POSITION_CONTROL ||
+              joints_[i].operating_mode == dxl_mode::EXTENDED_POSITION_CONTROL ||
+              joints_[i].operating_mode == dxl_mode::CURRENT_BASED_POSITION)
+          {
+            int32_t ticks = dxl_conv::rad_to_ticks(
+              position_cmds_[i], joints_[i].position_offset, joints_[i].reverse);
+            write4(joints_[i].dxl_id, dxl_addr::GOAL_POSITION,
+              static_cast<uint32_t>(ticks));
+          }
+        }
+        position_cmds_.clear();
+      }
+
+      // Effort (current) commands
+      if (!effort_cmds_.empty()) {
+        size_t n = std::min(effort_cmds_.size(), joints_.size());
+        for (size_t i = 0; i < n; ++i) {
+          if (joints_[i].operating_mode == dxl_mode::CURRENT_CONTROL ||
+              joints_[i].operating_mode == dxl_mode::CURRENT_BASED_POSITION)
+          {
+            int16_t raw = static_cast<int16_t>(
+              effort_cmds_[i] * joints_[i].effort_to_current);
+            write2(joints_[i].dxl_id, dxl_addr::GOAL_CURRENT,
+              static_cast<uint16_t>(raw));
+          }
+        }
+        effort_cmds_.clear();
+      }
+    }
+
+    // --- Read present state ---
+    sensor_msgs::msg::JointState js_msg;
+    js_msg.header.stamp = now();
+
+    for (const auto & jc : joints_) {
+      js_msg.name.push_back(jc.joint_name);
+
+      // Position
+      uint32_t pos_raw = 0;
+      if (read4(jc.dxl_id, dxl_addr::PRESENT_POSITION, pos_raw)) {
+        double pos = dxl_conv::ticks_to_rad(
+          static_cast<int32_t>(pos_raw), jc.position_offset, jc.reverse);
+        js_msg.position.push_back(pos);
+      } else {
+        js_msg.position.push_back(0.0);
+      }
+
+      // Velocity
+      uint32_t vel_raw = 0;
+      if (read4(jc.dxl_id, dxl_addr::PRESENT_VELOCITY, vel_raw)) {
+        double vel = dxl_conv::vel_ticks_to_radps(static_cast<int32_t>(vel_raw));
+        js_msg.velocity.push_back(vel);
+      } else {
+        js_msg.velocity.push_back(0.0);
+      }
+
+      // Current → effort
+      uint16_t cur_raw = 0;
+      if (read2(jc.dxl_id, dxl_addr::PRESENT_CURRENT, cur_raw)) {
+        double eff = dxl_conv::current_ticks_to_ma(static_cast<int16_t>(cur_raw));
+        js_msg.effort.push_back(eff);
+      } else {
+        js_msg.effort.push_back(0.0);
+      }
+    }
+
+    joint_state_pub_->publish(js_msg);
+  }
+
+  // ── Torque helpers ─────────────────────────────────────────────────────
+  void disable_all_torque()
+  {
+    for (const auto & jc : joints_) {
+      write1(jc.dxl_id, dxl_addr::TORQUE_ENABLE, 0);
+      write1(jc.dxl_id, dxl_addr::LED, 0);
+    }
+  }
+
+  // ── Low-level read/write wrappers ─────────────────────────────────────
+  bool write1(int id, uint16_t addr, uint8_t data)
+  {
+    uint8_t err = 0;
+    int r = packet_handler_->write1ByteTxRx(
+      port_handler_, static_cast<uint8_t>(id), addr, data, &err);
+    if (r != COMM_SUCCESS) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
+        "DXL %d write1 @%u failed: %s", id, addr, packet_handler_->getTxRxResult(r));
+      return false;
+    }
+    if (err) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
+        "DXL %d write1 @%u error: %s", id, addr, packet_handler_->getRxPacketError(err));
+    }
+    return true;
+  }
+
+  bool write2(int id, uint16_t addr, uint16_t data)
+  {
+    uint8_t err = 0;
+    int r = packet_handler_->write2ByteTxRx(
+      port_handler_, static_cast<uint8_t>(id), addr, data, &err);
+    if (r != COMM_SUCCESS) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
+        "DXL %d write2 @%u failed: %s", id, addr, packet_handler_->getTxRxResult(r));
+      return false;
+    }
+    return true;
+  }
+
+  bool write4(int id, uint16_t addr, uint32_t data)
+  {
+    uint8_t err = 0;
+    int r = packet_handler_->write4ByteTxRx(
+      port_handler_, static_cast<uint8_t>(id), addr, data, &err);
+    if (r != COMM_SUCCESS) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
+        "DXL %d write4 @%u failed: %s", id, addr, packet_handler_->getTxRxResult(r));
+      return false;
+    }
+    return true;
+  }
+
+  bool read2(int id, uint16_t addr, uint16_t & out)
+  {
+    uint8_t err = 0;
+    int r = packet_handler_->read2ByteTxRx(
+      port_handler_, static_cast<uint8_t>(id), addr, &out, &err);
+    if (r != COMM_SUCCESS) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+        "DXL %d read2 @%u failed: %s", id, addr, packet_handler_->getTxRxResult(r));
+      return false;
+    }
+    return true;
+  }
+
+  bool read4(int id, uint16_t addr, uint32_t & out)
+  {
+    uint8_t err = 0;
+    int r = packet_handler_->read4ByteTxRx(
+      port_handler_, static_cast<uint8_t>(id), addr, &out, &err);
+    if (r != COMM_SUCCESS) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+        "DXL %d read4 @%u failed: %s", id, addr, packet_handler_->getTxRxResult(r));
+      return false;
+    }
+    return true;
+  }
+
+  // ── Members ────────────────────────────────────────────────────────────
+  std::string port_name_;
+  int baud_rate_;
+  double protocol_;
+  double loop_rate_;
+
+  dynamixel::PortHandler   * port_handler_   = nullptr;
+  dynamixel::PacketHandler * packet_handler_ = nullptr;
+
+  std::vector<JointConfig> joints_;
+
+  rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr position_cmd_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr effort_cmd_sub_;
+
+  rclcpp::TimerBase::SharedPtr timer_;
+
+  std::mutex cmd_mtx_;
+  std::vector<double> position_cmds_;
+  std::vector<double> effort_cmds_;
+};
+
+// ─── main ────────────────────────────────────────────────────────────────────
+int main(int argc, char ** argv)
+{
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<DynamixelDriverNode>();
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node->get_node_base_interface());
+  executor.spin();
+  rclcpp::shutdown();
+  return 0;
+}

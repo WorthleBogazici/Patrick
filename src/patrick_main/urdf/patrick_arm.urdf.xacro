@@ -1,0 +1,230 @@
+<?xml version="1.0"?>
+<!--
+  Patrick custom robotic arm macro.
+
+  5-DOF arm (Joint1–Joint4 + wrist) with 2-finger gripper (Joint5R, Joint5L)
+  and end-effector reference frame (target_cube_ee).
+
+  Motor mapping:
+    Joint1  — Stepper motor (via Arduino)
+    Joint2  — Dynamixel RX-64 (Protocol 1.0, via Arduino)
+    Joint3  — Dynamixel RX-64 (Protocol 1.0, via Arduino)
+    Joint4  — Dynamixel AX-18A (Protocol 1.0, via Arduino)
+    Joint5R — Dynamixel AX-18A (Protocol 1.0, via Arduino)
+    Joint5L — Dynamixel AX-18A (Protocol 1.0, via Arduino)
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="patrick_arm" params="parent mesh_path">
+
+    <!-- Arm mount on the TurtleBot stack top plate -->
+    <link name="arm_mount_link">
+      <inertial><mass value="0.001"/><inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/></inertial>
+    </link>
+    <joint name="stack_top_to_arm_mount" type="fixed">
+      <parent link="${parent}"/>
+      <child link="arm_mount_link"/>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+    </joint>
+    <joint name="arm_mount_on_stack" type="fixed">
+      <parent link="arm_mount_link"/>
+      <child link="Link1"/>
+      <origin xyz="0.10 0.10 0" rpy="0 0 0"/>
+    </joint>
+
+    <!-- =============================================================== -->
+    <!--                         ARM LINKS                               -->
+    <!-- =============================================================== -->
+
+    <!-- Link1 (base of arm) — Stepper motor -->
+    <link name="Link1">
+      <inertial>
+        <origin xyz="-0.061896 -0.020892 0.069546" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <inertia ixx="0.0025929" ixy="0.00036535" ixz="-6.1955E-05"
+                 iyy="0.0035972" iyz="-8.2703E-05" izz="0.0025885"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link1.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="-0.06 -0.02 0.07" rpy="0 0 0"/>
+        <geometry><box size="0.10 0.06 0.14"/></geometry>
+      </collision>
+    </link>
+
+    <!-- Link2 — RX-64 motor -->
+    <link name="Link2">
+      <inertial>
+        <origin xyz="1.51E-08 0.010107 0.028392" rpy="0 0 0"/>
+        <mass value="0.61504"/>
+        <inertia ixx="0.0011453" ixy="9e-09" ixz="4e-10"
+                 iyy="0.001055" iyz="-7e-05" izz="0.0019533"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link2.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0.01 0.04" rpy="0 0 0"/>
+        <geometry><box size="0.05 0.05 0.08"/></geometry>
+      </collision>
+    </link>
+
+    <joint name="Joint1" type="revolute">
+      <origin xyz="-0.079116 0.022 0.08412" rpy="1.5708 0 3.1416"/>
+      <parent link="Link1"/><child link="Link2"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.5" friction="0.1"/>
+      <limit lower="-1.57079632679" upper="1.57079632679" effort="60" velocity="2"/>
+    </joint>
+
+    <!-- Link3 — RX-64 motor -->
+    <link name="Link3">
+      <inertial>
+        <origin xyz="-0.089748 -0.018544 0.10562" rpy="0 0 0"/>
+      <mass value="0.26262"/>
+      <inertia ixx="0.000127" ixy="-1.7e-05" ixz="5.8e-06"
+               iyy="0.000795" iyz="2.3e-05" izz="0.000797"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link3.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="-0.09 -0.02 0.09" rpy="0 0 0"/>
+        <geometry><box size="0.18 0.05 0.10"/></geometry>
+      </collision>
+    </link>
+
+    <joint name="Joint2" type="revolute">
+      <origin xyz="0 0 0.083271" rpy="1.5708 0 -3.1416"/>
+      <parent link="Link2"/><child link="Link3"/>
+      <axis xyz="0 0 -1"/>
+      <dynamics damping="0.3" friction="0.05"/>
+      <limit lower="-1.57079632679" upper="1.57079632679" effort="50" velocity="2"/>
+    </joint>
+
+    <!-- Link4 — AX-18A motor -->
+    <link name="Link4">
+      <inertial>
+        <origin xyz="0.068509 -0.0027606 0.032156" rpy="0 0 0"/>
+        <mass value="0.24164"/>
+        <inertia ixx="8.6e-05" ixy="8.5e-06" ixz="1.1e-05"
+                 iyy="0.000333" iyz="-1e-07" izz="0.000364"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link4.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0.07 0 0.03" rpy="0 0 0"/>
+        <geometry><box size="0.14 0.04 0.06"/></geometry>
+      </collision>
+    </link>
+
+    <joint name="Joint3" type="revolute">
+      <origin xyz="-0.18 0 0.08918" rpy="1.5708 0 3.1416"/>
+      <parent link="Link3"/><child link="Link4"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.2" friction="0.05"/>
+      <limit lower="-1.57079632679" upper="1.57079632679" effort="50" velocity="2"/>
+    </joint>
+
+    <!-- Link5 — AX-18A motor (wrist rotation) -->
+    <link name="Link5">
+      <inertial>
+        <origin xyz="-0.0037369 -0.00012065 0.17675" rpy="0 0 0"/>
+        <mass value="0.16593"/>
+        <inertia ixx="0.000185" ixy="5e-07" ixz="-4e-08"
+                 iyy="0.000130" iyz="-1e-05" izz="0.000181"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link5.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+    </link>
+
+    <joint name="Joint4" type="revolute">
+      <origin xyz="0 0.00039942 0.0332" rpy="1.5708 0 1.5708"/>
+      <parent link="Link4"/><child link="Link5"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.1" friction="0.02"/>
+      <limit lower="-3.14" upper="3.14" effort="50" velocity="2"/>
+    </joint>
+
+    <!-- Link6R (right gripper finger) — AX-18A motor -->
+    <link name="Link6R">
+      <inertial>
+        <origin xyz="0.0060906 0.033827 -0.0045" rpy="0 0 0"/>
+        <mass value="0.029229"/>
+        <inertia ixx="1.9e-05" ixy="1e-05" ixz="-2e-20"
+                 iyy="1.2e-05" iyz="3e-20" izz="2.6e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link6R.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+    </link>
+
+    <joint name="Joint5R" type="revolute">
+      <origin xyz="0 0.034628 0.1976" rpy="1.5708 0 1.5708"/>
+      <parent link="Link5"/><child link="Link6R"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.05" friction="0.01"/>
+      <limit lower="-0.393" upper="0.393" effort="50" velocity="2"/>
+    </joint>
+
+    <!-- Link6L (left gripper finger) — AX-18A motor -->
+    <link name="Link6L">
+      <inertial>
+        <origin xyz="-0.0052518 0.033968 -0.0045" rpy="0 0 0"/>
+        <mass value="0.029229"/>
+        <inertia ixx="1.9e-05" ixy="1e-05" ixz="-2e-20"
+                 iyy="1.2e-05" iyz="3e-20" izz="2.6e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="${mesh_path}/arm/Link6L.stl"/></geometry>
+        <material name="arm_grey"><color rgba="0.79216 0.81961 0.93333 1"/></material>
+      </visual>
+    </link>
+
+    <joint name="Joint5L" type="revolute">
+      <origin xyz="0 -0.034628 0.1976" rpy="1.5708 0 1.5708"/>
+      <parent link="Link5"/><child link="Link6L"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.05" friction="0.01"/>
+      <limit lower="-0.393" upper="0.393" effort="50" velocity="2"/>
+    </joint>
+
+    <!-- End-Effector target cube (visual reference) -->
+    <link name="target_cube_ee">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="1.7e-08" ixy="0.0" ixz="0.0"
+                 iyy="1.7e-08" iyz="0.0" izz="1.7e-08"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><box size="0.01 0.01 0.01"/></geometry>
+        <material name="ee_red"><color rgba="1 0 0 1"/></material>
+      </visual>
+    </link>
+
+    <joint name="link6_to_target_cube" type="fixed">
+      <origin xyz="-0.03463 0.02250 -0.0004" rpy="0 0 0"/>
+      <parent link="Link6R"/><child link="target_cube_ee"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

@@ -1,0 +1,201 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="environment">
+    <static>true</static>
+
+    <!-- ===================== TABLETOP ===================== -->
+    <link name="tabletop_link">
+      <pose>-0.505 0.0 0.39 0 0 1.570796</pose>
+
+      <collision name="tabletop_collision">
+        <geometry>
+          <box><size>1.50 0.50 0.04</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="tabletop_visual">
+        <geometry>
+          <box><size>1.50 0.50 0.04</size></box>
+        </geometry>
+        <material>
+          <ambient>0.55 0.35 0.17 1</ambient>
+          <diffuse>0.55 0.35 0.17 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== LEGS (WOOD) ===================== -->
+
+    <link name="leg_fl">
+      <pose>-0.725  0.72  0.185 0 0 1.570796</pose>
+      <collision name="collision">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+        <material>
+          <ambient>0.55 0.35 0.17 1</ambient>
+          <diffuse>0.55 0.35 0.17 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="leg_fr">
+      <pose>-0.285  0.72  0.185 0 0 1.570796</pose>
+      <collision name="collision">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+        <material>
+          <ambient>0.55 0.35 0.17 1</ambient>
+          <diffuse>0.55 0.35 0.17 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="leg_bl">
+      <pose>-0.725 -0.72  0.185 0 0 1.570796</pose>
+      <collision name="collision">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+        <material>
+          <ambient>0.55 0.35 0.17 1</ambient>
+          <diffuse>0.55 0.35 0.17 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="leg_br">
+      <pose>-0.285 -0.72  0.185 0 0 1.570796</pose>
+      <collision name="collision">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.06 0.06 0.37</size></box></geometry>
+        <material>
+          <ambient>0.55 0.35 0.17 1</ambient>
+          <diffuse>0.55 0.35 0.17 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===========================================================
+         NESTED DYNAMIC CYLINDERS MODEL
+         =========================================================== -->
+    <model name="objects">
+      <static>false</static>
+
+      <!-- ========== CYLINDER 1 (Red) ========== -->
+      <link name="cylinder_link1">
+        <gravity>false</gravity>
+        <pose>-0.400001 0.24 0.56 0 0 1.570796</pose>
+
+        <inertial>
+          <mass>0.5</mass>
+          <inertia>
+            <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>0.02</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+          <ambient>1 0 0 1</ambient>
+          <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- ========== CYLINDER 2 (Blue, with collision) ========== -->
+      <link name="cylinder_link2">
+        <gravity>true</gravity>
+        <pose>-0.30 0.60 0.56 0 0 1.570796</pose>
+
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+
+        <collision name="collision">
+          <geometry>
+            <cylinder><radius>0.02</radius><length>0.3</length></cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>4.0</mu><mu2>4.0</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>0.02</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+          <ambient>0 0 1 1</ambient>
+          <diffuse>0 0 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- ========== CYLINDER 3 (Green) ========== -->
+      <link name="cylinder_link3">
+        <gravity>false</gravity>
+        <pose>-0.400001 0.0 0.56 0 0 1.570796</pose>
+
+        <inertial>
+          <mass>2.5</mass>
+          <inertia>
+            <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>0.02</radius><length>0.30</length></cylinder>
+          </geometry>
+          <material>
+          <ambient>0 1 0 1</ambient>
+          <diffuse>0 1 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- ========== CYLINDER 4 (Purple) ========== -->
+      <link name="cylinder_link4">
+        <gravity>false</gravity>
+        <pose>-0.300001 -0.5418888 0.56 0 0 1.570796</pose>
+
+        <inertial>
+          <mass>2.5</mass>
+          <inertia>
+            <ixx>1e-4</ixx><iyy>1e-4</iyy><izz>1e-4</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>0.02</radius><length>0.30</length></cylinder>
+          </geometry>
+          <material>
+          <ambient>0.5 0 0.5 1</ambient>
+          <diffuse>0.5 0 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+    </model>
+
+  </model>
+</sdf>

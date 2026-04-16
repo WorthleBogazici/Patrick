@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>patrick_main</name>
+  <version>0.1.0</version>
+  <description>Main package for Patrick robot: URDF/Xacro description, meshes, launch files, unified config, and controller parameters</description>
+  <maintainer email="ayca@todo.todo">ayca</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Description dependencies -->
+  <depend>urdf</depend>
+  <depend>xacro</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>joint_state_publisher</depend>
+  <depend>joint_state_publisher_gui</depend>
+  <depend>kobuki_description</depend>
+  <depend>zed_description</depend>
+
+  <!-- Bringup dependencies -->
+  <exec_depend>patrick_simulation</exec_depend>
+  <exec_depend>patrick_navigation</exec_depend>
+  <exec_depend>patrick_manipulation</exec_depend>
+  <exec_depend>patrick_vision</exec_depend>
+  <exec_depend>patrick_msgs</exec_depend>
+  <exec_depend>patrick_coordination</exec_depend>
+
+  <exec_depend>ros2_control</exec_depend>
+  <exec_depend>ros2_controllers</exec_depend>
+  <exec_depend>gz_ros2_control</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>diff_drive_controller</exec_depend>
+  <exec_depend>effort_controllers</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
+  <exec_depend>ros_gz</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>kobuki_node</exec_depend>
+  <exec_depend>aws_robomaker_small_house_world</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
