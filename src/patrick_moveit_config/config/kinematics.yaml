@@ -1,0 +1,48 @@
+# =============================================================================
+# Patrick MoveIt2 — Kinematics (PickIK)
+# =============================================================================
+# 4-DOF arm. The joint axes let us fully control:
+#   - TCP position (x, y, z)            → solved by J1, J2, J3
+#   - Rotation about the tool Z-axis    → solved by J4 (wrist roll)
+# We CANNOT independently control roll/pitch about the tool X/Y axes.
+#
+# Strategy: position dominates, orientation gets partial weight so PickIK
+# uses J4 to match the goal's Z-axis twist where feasible. A loose
+# orientation threshold + approximate-solution fall-back means goals that
+# request impossible X/Y rotations still return a position-only solution.
+# =============================================================================
+
+arm:
+  kinematics_solver: pick_ik/PickIkPlugin
+  kinematics_solver_timeout: 0.2
+  kinematics_solver_attempts: 5
+
+  # Tell PickIK which link is the IK tip. arm_tool0 is a fixed frame at
+  # the gripper TCP (defined in patrick_arm.urdf.xacro).
+  tip_frames:
+    - arm_tool0
+
+  # "global" = many random seeds, robust for underactuated arms.
+  mode: global
+
+  # Pure position IK plus partial orientation. J4 will match the tool-Z
+  # twist when reachable; goals off that axis fall back to position-only.
+  position_scale: 1.0
+  rotation_scale: 0.5
+  minimal_displacement_weight: 0.0
+
+  # Convergence thresholds.
+  position_threshold: 0.005    # 5 mm
+  orientation_threshold: 0.2   # ~11° on the reachable twist axis
+  cost_threshold: 0.01
+
+  # Gradient-descent step.
+  gd_step_size: 0.0001
+  gd_min_cost_delta: 0.000001
+
+  # Approximate-solution fall-back — accept position-only when orientation
+  # cannot be reached (e.g. marker pitched away from tool axis).
+  approx_solution_position_threshold: 0.01
+  approx_solution_orientation_threshold: 3.15
+  approx_solution_cost_threshold: 0.2
+  stop_optimization_on_valid_solution: true

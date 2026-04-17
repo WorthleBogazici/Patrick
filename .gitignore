@@ -2,6 +2,7 @@
 build/
 install/
 log/
+scripts/
 
 # FastSAM model weights
 src/patrick_vision/segmentation/models/*.pt

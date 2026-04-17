@@ -1,0 +1,8 @@
+# =============================================================================
+# Patrick MoveIt2 — Pilz Cartesian Limits (LIN / CIRC)
+# =============================================================================
+cartesian_limits:
+  max_trans_vel: 0.5    # m/s
+  max_trans_acc: 1.0    # m/s^2
+  max_trans_dec: -2.0   # m/s^2
+  max_rot_vel:   1.57   # rad/s

@@ -1,0 +1,45 @@
+# =============================================================================
+# Patrick MoveIt2 — Controllers Bridge
+# =============================================================================
+# Maps MoveIt planning groups to ros2_control action servers.
+#
+#   arm     → /arm_controller/follow_joint_trajectory   (JTC in sim,
+#                                                        ScaledJTC remapped
+#                                                        in real HW)
+#   gripper → /gripper_controller/gripper_cmd           (GripperAction)
+#
+# Launch remaps the action namespace on real hardware so this file is
+# identical for sim + hardware.
+# =============================================================================
+
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+moveit_simple_controller_manager:
+  controller_names:
+    - arm_controller
+    - gripper_controller
+
+  arm_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - Joint1
+      - Joint2
+      - Joint3
+      - Joint4
+
+  gripper_controller:
+    type: GripperCommand
+    action_ns: gripper_cmd
+    default: true
+    joints:
+      - Joint5R
+
+# =============================================================================
+# Trajectory execution
+# =============================================================================
+trajectory_execution:
+  allowed_execution_duration_scaling: 2.0
+  allowed_goal_duration_margin: 0.5
+  allowed_start_tolerance: 0.05

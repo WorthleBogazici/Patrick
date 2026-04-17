@@ -26,6 +26,26 @@ ros-jazzy-effort-controllers
 ros-jazzy-joint-trajectory-controller
 ros-jazzy-realtime-tools
 ros-jazzy-hardware-interface
+ros-jazzy-ur-controllers                # scaled_joint_trajectory_controller
+ros-jazzy-parallel-gripper-controller   # parallel_gripper_action_controller
+
+# MoveIt2 (install via scripts/install_moveit.sh)
+ros-jazzy-moveit
+ros-jazzy-moveit-planners
+ros-jazzy-moveit-planners-ompl
+ros-jazzy-moveit-planners-chomp
+ros-jazzy-moveit-planners-stomp
+ros-jazzy-pilz-industrial-motion-planner
+ros-jazzy-moveit-ros-visualization
+ros-jazzy-moveit-setup-assistant
+ros-jazzy-moveit-simple-controller-manager
+ros-jazzy-moveit-ros-control-interface
+ros-jazzy-moveit-visual-tools
+ros-jazzy-moveit-servo
+ros-jazzy-moveit-configs-utils
+ros-jazzy-moveit-kinematics
+ros-jazzy-pick-ik                       # PickIK inverse kinematics solver
+ros-jazzy-srdfdom
 
 # Gazebo Harmonic integration
 ros-jazzy-ros-gz

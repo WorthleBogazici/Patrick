@@ -25,6 +25,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-realtime-tools \
     ros-jazzy-hardware-interface \
     ros-jazzy-ecl-build \
+    ros-jazzy-ur-controllers \
+    ros-jazzy-parallel-gripper-controller \
+    # MoveIt2 stack
+    ros-jazzy-moveit \
+    ros-jazzy-moveit-planners \
+    ros-jazzy-moveit-planners-ompl \
+    ros-jazzy-moveit-planners-chomp \
+    ros-jazzy-moveit-planners-stomp \
+    ros-jazzy-pilz-industrial-motion-planner \
+    ros-jazzy-moveit-ros-visualization \
+    ros-jazzy-moveit-setup-assistant \
+    ros-jazzy-moveit-simple-controller-manager \
+    ros-jazzy-moveit-ros-control-interface \
+    ros-jazzy-moveit-visual-tools \
+    ros-jazzy-moveit-servo \
+    ros-jazzy-moveit-configs-utils \
+    ros-jazzy-moveit-kinematics \
+    ros-jazzy-pick-ik \
+    ros-jazzy-srdfdom \
     # Gazebo Harmonic integration
     ros-jazzy-ros-gz \
     ros-jazzy-ros-gz-sim \

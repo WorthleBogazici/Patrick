@@ -137,6 +137,22 @@
 
   <!-- ================================================================= -->
   <!--  5. ros2_control hardware interface                               -->
+  <!--                                                                   -->
+  <!--  Arm joints use POSITION command interface (works for both        -->
+  <!--  Dynamixel protocol 1 and stepper-with-encoder backends, and is   -->
+  <!--  what joint_trajectory_controller / scaled_joint_trajectory_      -->
+  <!--  controller drive with MoveIt trajectories).                      -->
+  <!--                                                                   -->
+  <!--  Joint5L is declared as a mimic of Joint5R (parallel-jaw gripper) -->
+  <!--  so it has NO command interface exported. In Gazebo Harmonic,     -->
+  <!--  gz_ros2_control honours URDF <mimic> via the ros2_control Mimic  -->
+  <!--  component. On real hardware, ArduinoHardwareInterface replicates -->
+  <!--  the Joint5R command internally.                                  -->
+  <!--                                                                   -->
+  <!--  A GPIO "speed_scaling" is exported so ScaledJointTrajectory-     -->
+  <!--  Controller can slow trajectory execution when the real hardware  -->
+  <!--  reports reduced capability (Dynamixel overload, stall, etc.).    -->
+  <!--  In simulation it is hardcoded to 1.0 by gz_ros2_control.         -->
   <!-- ================================================================= -->
   <ros2_control name="patrick_ros2_control" type="system">
     <xacro:if value="${use_sim}">
@@ -164,43 +180,55 @@
       <state_interface name="velocity"/>
     </joint>
 
-    <!-- Arm joints (all via Arduino on real HW) -->
+    <!-- Arm joints (Joint1..Joint4) — position-commanded -->
     <joint name="Joint1">
-      <command_interface name="effort"/>
+      <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
     <joint name="Joint2">
-      <command_interface name="effort"/>
+      <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
     <joint name="Joint3">
-      <command_interface name="effort"/>
+      <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
     <joint name="Joint4">
-      <command_interface name="effort"/>
+      <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
+
+    <!-- Gripper driver joint (Joint5R) — position-commanded -->
     <joint name="Joint5R">
-      <command_interface name="effort"/>
+      <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
+
+    <!-- Gripper mimic joint (Joint5L) — no command interface, mirrors Joint5R
+         with multiplier -1.0 so the jaws move in OPPOSITE directions
+         (parallel-jaw open/close), not together. -->
     <joint name="Joint5L">
-      <command_interface name="effort"/>
+      <param name="mimic">Joint5R</param>
+      <param name="multiplier">-1.0</param>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
+
+    <!-- Speed-scaling GPIO (consumed by ur_controllers/ScaledJointTrajectoryController) -->
+    <gpio name="speed_scaling">
+      <state_interface name="speed_scaling_factor"/>
+    </gpio>
   </ros2_control>
 
   <!-- ================================================================= -->

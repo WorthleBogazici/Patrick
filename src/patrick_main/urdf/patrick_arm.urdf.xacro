@@ -203,6 +203,11 @@
       <axis xyz="0 0 1"/>
       <dynamics damping="0.05" friction="0.01"/>
       <limit lower="-0.393" upper="0.393" effort="50" velocity="2"/>
+      <!-- Gripper is a 1-DOF parallel jaw; left finger mirrors right finger.
+           Both joints share the same axis orientation in Link5, so the mimic
+           multiplier must be -1.0 for the fingers to move in OPPOSITE
+           directions (open/close) instead of swaying together. -->
+      <mimic joint="Joint5R" multiplier="-1.0" offset="0.0"/>
     </joint>
 
     <!-- End-Effector target cube (visual reference) -->
@@ -223,6 +228,18 @@
     <joint name="link6_to_target_cube" type="fixed">
       <origin xyz="-0.03463 0.02250 -0.0004" rpy="0 0 0"/>
       <parent link="Link6R"/><child link="target_cube_ee"/>
+    </joint>
+
+    <!-- Tool Center Point (TCP) — virtual frame MoveIt uses as the IK tip.
+         Fixed to Link5 (the wrist, AFTER Joint4 but BEFORE Joint5R/L) so the
+         arm kinematic chain base_link → arm_tool0 only includes Joint1..4
+         (gripper joints stay out of the arm group). Its offset in Link5
+         equals target_cube_ee's world position at Joint5R=0, putting the
+         interactive goal marker between the gripper jaws. -->
+    <link name="arm_tool0"/>
+    <joint name="arm_tool0_joint" type="fixed">
+      <origin xyz="0 0 0.22" rpy="0 0 0"/>
+      <parent link="Link5"/><child link="arm_tool0"/>
     </joint>
 
   </xacro:macro>

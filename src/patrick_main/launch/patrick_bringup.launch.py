@@ -34,6 +34,9 @@ def generate_launch_description():
     gui_arg = DeclareLaunchArgument('gui', default_value='true')
     rviz_arg = DeclareLaunchArgument('rviz', default_value='true')
     vision_arg = DeclareLaunchArgument('vision', default_value='true')
+    moveit_arg = DeclareLaunchArgument(
+        'moveit', default_value='true',
+        description='true = launch MoveIt (move_group + MotionPlanning RViz)')
     simulation_arg = DeclareLaunchArgument(
         'simulation', default_value='false',
         description='true = Gazebo simulation, false = real hardware (Arduino + Kobuki)')
@@ -53,6 +56,15 @@ def generate_launch_description():
 
     use_sim = LaunchConfiguration('simulation')
     use_kinect = LaunchConfiguration('kinect')
+    use_moveit = LaunchConfiguration('moveit')
+
+    # When MoveIt is enabled it brings its own RViz (MotionPlanning plugin),
+    # so suppress the bringup RViz to avoid two RViz instances fighting over
+    # the same config.
+    launch_own_rviz = PythonExpression([
+        "'", LaunchConfiguration('rviz'), "' == 'true' and '",
+        use_moveit, "' != 'true'",
+    ])
 
     # ── Paths ────────────────────────────────────────────────────────────────
     xacro_file = PathJoinSubstitution([pkg_main, 'urdf', 'patrick.urdf.xacro'])
@@ -153,12 +165,21 @@ def generate_launch_description():
         condition=IfCondition(use_sim),
     )
 
+    gripper_controller_spawner_sim = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['gripper_controller', '--controller-manager', '/controller_manager'],
+        output='screen',
+        condition=IfCondition(use_sim),
+    )
+
     delay_sim_controllers = RegisterEventHandler(
         OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
             on_exit=[
                 diff_drive_spawner,
                 arm_controller_spawner_sim,
+                gripper_controller_spawner_sim,
             ],
         ),
         condition=IfCondition(use_sim),
@@ -179,6 +200,19 @@ def generate_launch_description():
         condition=UnlessCondition(use_sim),
     )
 
+    # Controller manager (real HW) — loads ArduinoHardwareInterface from URDF
+    # In simulation, gz_ros2_control provides the controller manager instead.
+    hw_controller_manager = Node(
+        package='controller_manager',
+        executable='ros2_control_node',
+        parameters=[
+            {'robot_description': robot_description},
+            controllers_yaml,
+        ],
+        output='screen',
+        condition=UnlessCondition(use_sim),
+    )
+
     # Arm controller spawners (real HW — ArduinoHardwareInterface loaded from URDF)
     hw_joint_state_broadcaster = Node(
         package='controller_manager',
@@ -191,7 +225,15 @@ def generate_launch_description():
     hw_arm_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['arm_controller', '--controller-manager', '/controller_manager'],
+        arguments=['scaled_arm_controller', '--controller-manager', '/controller_manager'],
+        output='screen',
+        condition=UnlessCondition(use_sim),
+    )
+
+    hw_gripper_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['gripper_controller', '--controller-manager', '/controller_manager'],
         output='screen',
         condition=UnlessCondition(use_sim),
     )
@@ -201,6 +243,7 @@ def generate_launch_description():
             target_action=hw_joint_state_broadcaster,
             on_exit=[
                 hw_arm_controller_spawner,
+                hw_gripper_controller_spawner,
             ],
         ),
         condition=UnlessCondition(use_sim),
@@ -222,8 +265,33 @@ def generate_launch_description():
         executable='rviz2',
         arguments=['-d', rviz_config],
         output='screen',
-        condition=IfCondition(LaunchConfiguration('rviz')),
+        condition=IfCondition(launch_own_rviz),
         parameters=[{'use_sim_time': use_sim}],
+    )
+
+    # ── MoveIt (move_group + MotionPlanning RViz) ──────────────────────────
+    # Delayed by 8 s in simulation so Gazebo's /clock is publishing before
+    # RViz subscribes — avoids the initial wall-time → sim-time jump that
+    # triggers a TF buffer reset in MotionPlanningDisplay.
+    moveit_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([
+                FindPackageShare('patrick_moveit_config'),
+                'launch', 'patrick_moveit.launch.py',
+            ])
+        ),
+        launch_arguments={
+            'use_sim_time': use_sim,
+            'simulation': use_sim,
+            'rviz': LaunchConfiguration('rviz'),
+        }.items(),
+        condition=IfCondition(use_moveit),
+    )
+
+    delayed_moveit = TimerAction(
+        period=8.0,
+        actions=[moveit_launch],
+        condition=IfCondition(use_moveit),
     )
 
     # Vision pipeline (delayed start)
@@ -261,6 +329,7 @@ def generate_launch_description():
         gui_arg,
         rviz_arg,
         vision_arg,
+        moveit_arg,
         simulation_arg,
         kinect_arg,
         world_arg,
@@ -276,10 +345,13 @@ def generate_launch_description():
         delay_sim_controllers,
         # Real hardware
         kobuki_ros_node,
+        hw_controller_manager,
         hw_joint_state_broadcaster,
         delay_hw_controllers,
         # Visualization
         rviz_node,
+        # MoveIt (delayed)
+        delayed_moveit,
         # Vision (delayed)
         delayed_vision,
     ])

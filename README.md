@@ -12,6 +12,7 @@ Patrick is a mobile manipulation robot built on a **Kobuki** base with a **Turtl
 | `patrick_vision` | FastSAM color detection (Python), 3D object frame publisher, RViz marker publisher |
 | `patrick_coordination` | High-level task coordination (stub/in-progress) |
 | `patrick_simulation` | Gazebo Harmonic simulation launch and world configs |
+| `patrick_moveit_config` | MoveIt2 config: SRDF, kinematics (pick-ik), controller bridge, RViz MotionPlanning |
 | `patrick_msgs` | Custom messages, services, and actions |
 | `third_party_ros2/` | Vendored third-party packages (Kobuki, DynamixelSDK, ZED wrapper, RPLidar, etc.) |
 
@@ -67,6 +68,24 @@ sudo apt install -y \
   ros-jazzy-joint-trajectory-controller \
   ros-jazzy-realtime-tools \
   ros-jazzy-hardware-interface \
+  ros-jazzy-ur-controllers \
+  ros-jazzy-parallel-gripper-controller \
+  ros-jazzy-moveit \
+  ros-jazzy-moveit-planners \
+  ros-jazzy-moveit-planners-ompl \
+  ros-jazzy-moveit-planners-chomp \
+  ros-jazzy-moveit-planners-stomp \
+  ros-jazzy-pilz-industrial-motion-planner \
+  ros-jazzy-moveit-ros-visualization \
+  ros-jazzy-moveit-setup-assistant \
+  ros-jazzy-moveit-simple-controller-manager \
+  ros-jazzy-moveit-ros-control-interface \
+  ros-jazzy-moveit-visual-tools \
+  ros-jazzy-moveit-servo \
+  ros-jazzy-moveit-configs-utils \
+  ros-jazzy-moveit-kinematics \
+  ros-jazzy-pick-ik \
+  ros-jazzy-srdfdom \
   ros-jazzy-ros-gz \
   ros-jazzy-ros-gz-sim \
   ros-jazzy-ros-gz-bridge \
@@ -143,7 +162,8 @@ ros2 launch patrick_main patrick_bringup.launch.py simulation:=false
 | `simulation` | `false` | `true` for Gazebo sim, `false` for real hardware |
 | `kinect` | `false` | `true` to use Kinect camera, `false` for ZED2 |
 | `gui` | `true` | Enable Gazebo GUI |
-| `rviz` | `true` | Launch RViz |
+| `rviz` | `true` | Launch RViz (auto-suppressed when MoveIt brings its own) |
+| `moveit` | `true` | Launch the MoveIt2 stack (move_group + MotionPlanning RViz) |
 | `vision` | `true` | Launch the vision pipeline (FastSAM) |
 | `world` | `small_house.world` | Path to Gazebo world file |
 
@@ -167,3 +187,54 @@ ros2 launch patrick_main patrick_bringup.launch.py simulation:=false
    ```
 
 Without this file, the vision pipeline (`fastsam_color_detector`) will fail to start.
+
+## MoveIt2 Integration
+
+`patrick_moveit_config` provides a full MoveIt2 setup for the 4-DOF arm + parallel-jaw gripper:
+
+- **Planning group** `arm`: `<chain base_link="base_link" tip_link="arm_tool0"/>` — the TCP frame `arm_tool0` sits between the jaws at `Link5 + (0, 0, 0.22)`, so the interactive EE marker drags the real tool point.
+- **Gripper group** `gripper`: `Joint5R` (driven); `Joint5L` mimics with `multiplier="-1.0"` for opposite motion.
+- **Named states** (calibrated from the live robot): `home`, `stowed`, `ready`, `open`, `closed`.
+- **IK solver**: `pick_ik/PickIkPlugin` in `mode: global` with `position_scale: 1.0`, `rotation_scale: 0.5`, and a loose approximate-solution fallback so position-only goals succeed when full orientation is unreachable.
+- **Controller bridge**: `moveit_simple_controller_manager` — `FollowJointTrajectory` on `arm_controller` (sim) / `scaled_arm_controller` (hw, `ur_controllers/ScaledJointTrajectoryController`), `GripperCommand` on `gripper_controller/gripper_cmd`.
+- **Collision matrix**: arm-vs-base and base-vs-base pairs are all disabled in the SRDF (the base/stack/sensor/camera links are rigid-joined to `base_link`, so they cannot dynamically collide).
+
+MoveIt launches automatically as part of `patrick_bringup.launch.py` (`moveit:=true` by default, with an 8 s `TimerAction` delay so `/clock` and controllers are up first). When MoveIt runs, the bringup's own RViz is suppressed and MoveIt's `moveit.rviz` (with the MotionPlanning panel) takes over.
+
+To disable MoveIt and use plain bringup RViz:
+
+```bash
+ros2 launch patrick_main patrick_bringup.launch.py simulation:=true moveit:=false
+```
+
+To launch the MoveIt demo standalone (no Gazebo, fake controllers):
+
+```bash
+ros2 launch patrick_moveit_config demo.launch.py
+```
+
+## Docker
+
+A `Dockerfile`, `docker-compose.yaml`, and `entrypoint.sh` are included. The image is built on `ros:jazzy` and installs every dependency above (ROS 2 desktop, Gazebo Harmonic, ros2_control, the full MoveIt2 stack with `pick-ik`, ZED description, etc.), copies `src/` into `/patrick_ws/src/`, and runs `colcon build --symlink-install`.
+
+### Build
+
+Either Docker Compose or a plain `docker build` works:
+
+```bash
+# Option A — Compose
+docker compose build
+
+# Option B — plain docker
+docker build -t patrick:latest .
+```
+
+### Run
+
+```bash
+sudo xhost +   # allow GUI from container
+docker compose up patrick-simulation    # Gazebo + MoveIt + RViz
+docker compose up patrick-hardware      # real hardware bringup
+```
+
+The compose file mounts `./src` into the container so source edits are picked up without rebuilding — just re-run `colcon build` inside the container.
