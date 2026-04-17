@@ -1,0 +1,64 @@
+x-volumes: &volumes
+  - /tmp/.X11-unix:/tmp/.X11-unix:rw
+  - /etc/localtime:/etc/localtime:ro
+  - /dev/dri:/dev/dri
+  # Mount local src — changes reflect immediately without rebuild
+  - ./src:/patrick_ws/src
+  # Mount entrypoint to allow changes without rebuild
+  - ./entrypoint.sh:/entrypoint.sh
+
+x-environment: &environment
+  - DISPLAY
+  - NVIDIA_VISIBLE_DEVICES=all
+  - NVIDIA_DRIVER_CAPABILITIES=all
+  - QT_X11_NO_MITSHM=1
+
+x-common: &common
+  image: patrick:latest
+  network_mode: host
+  privileged: true
+  ipc: host
+  stdin_open: true
+  tty: true
+
+# ════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ── Full simulation (Gazebo + controllers + RViz) via patrick_bringup ──
+  patrick-simulation:
+    container_name: patrick-simulation
+    command: bash -c "ros2 launch patrick_main patrick_bringup.launch.py simulation:=true"
+    <<: *common
+    environment: *environment
+    volumes: *volumes
+
+  patrick-hardware:
+    container_name: patrick-hardware
+    command: bash -c "ros2 launch patrick_main patrick_bringup.launch.py simulation:=false"
+    <<: *common
+    environment: *environment
+    volumes: *volumes
+    
+  # ── Gazebo-only (standalone gazebo.launch.py from patrick_simulation) ──
+  # gazebo:
+  #   container_name: patrick-gazebo
+  #   command: bash -c "ros2 launch patrick_simulation gazebo.launch.py"
+  #   <<: *common
+  #   environment: *environment
+  #   volumes: *volumes
+
+  # # ── View robot model in RViz only (no Gazebo) ─────────────────────────
+  # view-robot:
+  #   container_name: patrick-rviz
+  #   command: bash -c "ros2 launch patrick_main view_robot.launch.py"
+  #   <<: *common
+  #   environment: *environment
+  #   volumes: *volumes
+
+  # # ── Interactive shell for debugging ────────────────────────────────────
+  # shell:
+  #   container_name: patrick-shell
+  #   command: bash
+  #   <<: *common
+  #   environment: *environment
+  #   volumes: *volumes
